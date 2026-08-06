@@ -17,7 +17,6 @@ class MeteoCaracas():
         self.municipios = []
         self.consultas = []
 
-    # CARGA DE DATOS
     def carga_inicial(self):
         """Lee el archivo de zonas y muestra el reporte de la carga."""
         print("Cargando el archivo de zonas de Caracas, espere un momento...")
@@ -42,8 +41,6 @@ class MeteoCaracas():
             return False
 
         for nombre_municipio in datos:
-            # En el archivo el nombre viene con guion bajo ("El_Hatillo"),
-            # se le cambia por un espacio para que se vea bien en pantalla.
             municipio = Municipio(nombre_municipio.replace("_", " "))
 
             for dato in datos[nombre_municipio]:
@@ -62,7 +59,6 @@ class MeteoCaracas():
         else:
             return False
 
-    # REPORTE DE LA CARGA
     def mostrar_reporte_de_carga(self):
         """Muestra el reporte de carga de cada municipio (el punto 1 del
         enunciado) y al final los totales de toda la ciudad.
@@ -87,13 +83,12 @@ class MeteoCaracas():
 
         print("")
         print("---------------------------------------------")
-        print(f"TOTAL de localidades cargadas..........: {total}")
-        print(f"TOTAL con coordenadas geograficas......: {total_con}")
-        print(f"TOTAL sin coordenadas geograficas......: {total_sin}")
-        print(f"Porcentaje con coordenadas.............: {porcentaje} %")
+        print(f"TOTAL de localidades cargadas: {total}")
+        print(f"TOTAL con coordenadas geográficas: {total_con}")
+        print(f"TOTAL sin coordenadas geográficas: {total_sin}")
+        print(f"Porcentaje con coordenadas: {porcentaje} %")
         print("=============================================")
 
-    # CONEXION CON LA API
     def descargar_json(self, direccion):
         """Le hace la solicitud GET a la API y devuelve el json.
 
@@ -104,12 +99,6 @@ class MeteoCaracas():
             datos = respuesta.json()
         except:
             print("No se pudo consultar la API de Open-Meteo. Revise su internet.")
-            return None
-
-        # Cuando algo esta mal (por ejemplo una fecha fuera de rango) la API
-        # no manda el clima sino un aviso de error explicando que paso.
-        if ("error" in datos):
-            print(f"La API no acepto la consulta: {datos['reason']}")
             return None
 
         return datos
@@ -125,9 +114,6 @@ class MeteoCaracas():
             return None
 
         print(f"\nConsultando el clima de {localidad.nombre}, espere un momento...")
-        # La direccion se arma pegandole a la API los datos que uno quiere:
-        # la latitud, la longitud, cuales mediciones se piden (current) y
-        # timezone=auto para que la hora venga en la hora de Venezuela.
         direccion = (f"https://api.open-meteo.com/v1/forecast"
                      f"?latitude={localidad.latitud}"
                      f"&longitude={localidad.longitud}"
@@ -137,28 +123,20 @@ class MeteoCaracas():
         if (datos == None):
             return None
 
-        # Los datos del momento vienen adentro de "current".
         if ("current" not in datos):
-            print("La API no mando los datos del clima de esta localidad.")
+            print("La API no mandó los datos del clima de esta localidad.")
             return None
 
         actual = datos["current"]
-        clima = Clima(localidad,
-                      actual["time"],
-                      actual["temperature_2m"],
-                      actual["relative_humidity_2m"],
-                      actual["wind_speed_10m"],
-                      actual["weather_code"])
-
-        localidad.guardar_clima(clima)
+        clima = Clima(localidad,actual["time"],actual["temperature_2m"],actual["relative_humidity_2m"],actual["wind_speed_10m"],actual["weather_code"])
+        localidad.climas.append(clima)
         self.consultas.append(clima)
         return clima
 
-    # BUSQUEDAS
     def mostrar_municipios(self):
         """Muestra en pantalla la lista de municipios numerada."""
         print("")
-        print("MUNICIPIOS DEL AREA METROPOLITANA DE CARACAS")
+        print("MUNICIPIOS DEL ÁREA METROPOLITANA DE CARACAS")
         print("---------------------------------------------")
         numero = 1
         for municipio in self.municipios:
@@ -171,9 +149,16 @@ class MeteoCaracas():
         Devuelve None si el usuario escribe un numero que no esta en la lista.
         """
         self.mostrar_municipios()
-        numero = self.pedir_numero_entero("\nEscriba el numero del municipio: ")
+
+        while True:
+            try:
+                numero = int(input("\nEscriba el número del municipio: "))
+                break
+            except:
+                print("Por favor escriba un número entero válido.")
+
         if (numero < 1 or numero > len(self.municipios)):
-            print("Ese numero no esta en la lista de municipios.")
+            print("Ese número no está en la lista de municipios.")
             return None
         municipio = self.municipios[numero - 1]
         return municipio
@@ -185,7 +170,7 @@ class MeteoCaracas():
         print("---------------------------------------------")
         numero = 1
         for localidad in localidades:
-            localidad.mostrar_en_lista(numero)
+            print(f"{numero}- {localidad.nombre}")
             numero = numero + 1
 
     def escoger_localidad(self, localidades):
@@ -199,9 +184,16 @@ class MeteoCaracas():
             return None
 
         self.mostrar_localidades(localidades)
-        numero = self.pedir_numero_entero("\nEscriba el numero de la localidad: ")
+
+        while True:
+            try:
+                numero = int(input("\nEscriba el número de la localidad: "))
+                break
+            except:
+                print("Por favor escriba un número entero válido.")
+
         if (numero < 1 or numero > len(localidades)):
-            print("Ese numero no esta en la lista de localidades.")
+            print("Ese número no está en la lista de localidades.")
             return None
         localidad = localidades[numero - 1]
         return localidad
@@ -268,26 +260,26 @@ class MeteoCaracas():
         print("        RANKING DE TEMPERATURA")
         print("=============================================")
         if (self.hubo_consultas() == False):
-            print("Todavia no se ha consultado el clima de ninguna localidad.")
-            print("Use las opciones 2 o 3 del menu y vuelva a entrar aqui.")
+            print("Todavía no se ha consultado el clima de ninguna localidad.")
+            print("Use las opciones 2 o 3 del menú y vuelva a entrar aquí.")
             return
 
         calido = self.clima_mas_calido()
         frio = self.clima_mas_frio()
 
-        print(f"Consultas hechas en esta sesion: {len(self.consultas)}")
+        print(f"Consultas hechas en esta sesión: {len(self.consultas)}")
         print("---------------------------------------------")
-        print("LA MAS CALIDA")
-        print(f"  Municipio...: {calido.localidad.nombre_municipio}")
-        print(f"  Localidad...: {calido.localidad.nombre}")
-        print(f"  Temperatura.: {calido.temperatura} C")
+        print("LA MÁS CÁLIDA")
+        print(f"  Municipio: {calido.localidad.nombre_municipio}")
+        print(f"  Localidad: {calido.localidad.nombre}")
+        print(f"  Temperatura: {calido.temperatura} C")
         print("")
-        print("LA MAS FRIA")
-        print(f"  Municipio...: {frio.localidad.nombre_municipio}")
-        print(f"  Localidad...: {frio.localidad.nombre}")
-        print(f"  Temperatura.: {frio.temperatura} C")
+        print("LA MÁS FRÍA")
+        print(f"  Municipio: {frio.localidad.nombre_municipio}")
+        print(f"  Localidad: {frio.localidad.nombre}")
+        print(f"  Temperatura: {frio.temperatura} C")
         print("---------------------------------------------")
-        print("TODAS LAS CONSULTAS DE LA SESION")
+        print("TODAS LAS CONSULTAS DE LA SESIÓN")
         for clima in self.consultas:
             clima.mostrar_resumen()
         print("=============================================")
@@ -299,7 +291,7 @@ class MeteoCaracas():
         """
         print("")
         print("=============================================")
-        print("        COBERTURA GEOGRAFICA")
+        print("        COBERTURA GEOGRÁFICA")
         print("  Localidades SIN coordenadas registradas")
         print("=============================================")
 
@@ -328,75 +320,14 @@ class MeteoCaracas():
         print("=============================================")
         promedio = self.promedio_de_temperatura()
         if (promedio == None):
-            print("Todavia no se ha consultado el clima de ninguna localidad.")
-            print("Use las opciones 2 o 3 del menu y vuelva a entrar aqui.")
+            print("Todavía no se ha consultado el clima de ninguna localidad.")
+            print("Use las opciones 2 o 3 del menú y vuelva a entrar aquí.")
             return
 
-        print(f"Localidades consultadas en la sesion: {len(self.consultas)}")
+        print(f"Localidades consultadas en la sesión: {len(self.consultas)}")
         for clima in self.consultas:
             clima.mostrar_resumen()
         print("---------------------------------------------")
-        print(f"Temperatura promedio de la sesion: {promedio} C")
+        print(f"Temperatura promedio de la sesión: {promedio} C")
         print("=============================================")
 
-    # VALIDACIONES
-    def pedir_numero_entero(self, mensaje):
-        """Pide un numero entero y no avanza hasta que escriban uno bueno.
-
-        Si escriben letras se les avisa y se les pregunta otra vez, en vez de
-        que el programa se cierre.
-        """
-        while True:
-            try:
-                numero = int(input(mensaje))
-                return numero
-            except:
-                print("Por favor escriba un numero entero valido.")
-
-    def pedir_texto(self, mensaje):
-        """Pide un texto y no deja avanzar hasta que escriban algo."""
-        while True:
-            texto = input(mensaje)
-            texto = texto.strip()
-            if (texto != ""):
-                return texto
-            print("Por favor escriba algo, no puede quedar en blanco.")
-
-    def pedir_fecha(self, mensaje):
-        """Pide una fecha AAAA-MM-DD y no avanza hasta que este bien escrita.
-
-        Los int() se caen si alguna parte no es numero y los len() revisan que
-        sean 4, 2 y 2. De lo que quede se encarga la API con su mensaje.
-        """
-        while True:
-            texto = self.pedir_texto(mensaje)
-            fecha_buena = False
-
-            try:
-                partes = texto.split("-")
-                anio = int(partes[0])
-                mes = int(partes[1])
-                dia = int(partes[2])
-                if (len(partes[0]) == 4 and len(partes[1]) == 2 and len(partes[2]) == 2):
-                    if (anio > 0 and mes >= 1 and mes <= 12 and dia >= 1 and dia <= 31):
-                        fecha_buena = True
-            except:
-                fecha_buena = False
-
-            if (fecha_buena == True):
-                return texto
-
-            print("Ocurrio un error con la fecha, intentelo nuevamente.")
-            print("Se escribe como AAAA-MM-DD (ejemplo: 2020-03-15).")
-
-    def fecha_a_numero(self, texto):
-        """Convierte "2020-03-15" en el numero 20200315.
-
-        Sirve para comparar fechas: mientras mas grande, mas nueva es.
-        """
-        partes = texto.split("-")
-        anio = int(partes[0])
-        mes = int(partes[1])
-        dia = int(partes[2])
-        numero = anio * 10000 + mes * 100 + dia
-        return numero
