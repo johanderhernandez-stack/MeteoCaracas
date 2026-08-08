@@ -1,4 +1,3 @@
-import json
 import requests
 
 from municipio import Municipio
@@ -24,31 +23,76 @@ class MeteoCaracas():
             self.mostrar_reporte_de_carga()
 
     def cargar_zonas(self):
-        """Lee zonas_caracas.json y lo pasa a listas de objetos.
-
-        Los datos del archivo vienen en diccionarios, pero NO se guardan asi:
-        de cada uno se crea una Localidad y se mete en su Municipio.
+        """Lee zonas_caracas.json linea por linea y lo pasa a listas de objetos.
         """
         archivo_zonas = "zonas_caracas.json"
 
         try:
-            archivo = open(archivo_zonas, "r", encoding="utf-8")
-            datos = json.load(archivo)
+            archivo = open(archivo_zonas, "r")
+            lineas = archivo.readlines()
             archivo.close()
         except:
             print(f"No se pudo leer el archivo {archivo_zonas}.")
             print("Tiene que estar en la misma carpeta que main.py y estar completo.")
             return False
 
-        for nombre_municipio in datos:
-            municipio = Municipio(nombre_municipio.replace("_", " "))
+        municipio = None
+        nombre = ""
+        latitud = None
+        longitud = None
 
-            for dato in datos[nombre_municipio]:
-                localidad = Localidad(dato["localidad"], dato["latitud"],
-                                      dato["longitud"], municipio.nombre)
-                municipio.agregar_localidad(localidad)
+        for linea in lineas:
+            linea = linea.strip()
 
-            self.municipios.append(municipio)
+            if (linea.endswith("[") == True):
+                partes = linea.split("\"")
+                nombre_municipio = partes[1]
+                nombre_municipio = nombre_municipio.replace("_", " ")
+                municipio = Municipio(nombre_municipio)
+                self.municipios.append(municipio)
+
+            elif (linea == "{"):
+                nombre = ""
+                latitud = None
+                longitud = None
+
+            elif (linea.startswith("\"localidad\"") == True):
+                partes = linea.split(":")
+                valor = partes[1]
+                valor = valor.strip()
+                valor = valor.replace(",", "")
+                partes = valor.split("\"")
+                nombre = partes[1]
+
+            elif (linea.startswith("\"latitud\"") == True):
+                partes = linea.split(":")
+                valor = partes[1]
+                valor = valor.strip()
+                valor = valor.replace(",", "")
+                if (valor == "null"):
+                    latitud = None
+                else:
+                    latitud = float(valor)
+
+            elif (linea.startswith("\"longitud\"") == True):
+                partes = linea.split(":")
+                valor = partes[1]
+                valor = valor.strip()
+                valor = valor.replace(",", "")
+                if (valor == "null"):
+                    longitud = None
+                else:
+                    longitud = float(valor)
+
+                if (municipio != None):
+                    localidad = Localidad(nombre, latitud, longitud,
+                                          municipio.nombre)
+                    municipio.agregar_localidad(localidad)
+
+        if (self.hay_datos_cargados() == False):
+            print(f"El archivo {archivo_zonas} no tiene ningún municipio.")
+            print("Revise que el archivo esté completo.")
+            return False
 
         return True
 
@@ -60,8 +104,7 @@ class MeteoCaracas():
             return False
 
     def mostrar_reporte_de_carga(self):
-        """Muestra el reporte de carga de cada municipio (el punto 1 del
-        enunciado) y al final los totales de toda la ciudad.
+        """Muestra el reporte de carga de cada municipio y al final los totales de toda la ciudad.
         """
         print("")
         print("=============================================")
@@ -330,4 +373,6 @@ class MeteoCaracas():
         print("---------------------------------------------")
         print(f"Temperatura promedio de la sesión: {promedio} C")
         print("=============================================")
+
+
 
